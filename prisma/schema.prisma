@@ -1,0 +1,226 @@
+// EquipRent — construction equipment rental marketplace
+// Prisma schema targeting PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Users
+// ---------------------------------------------------------------------------
+
+enum UserRole {
+  RENTER
+  OWNER
+  ADMIN
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  phone        String?
+  avatarUrl    String?
+  role         UserRole @default(RENTER)
+
+  // Owner/supplier-facing fields (populated when role includes OWNER)
+  companyName String?
+  isVerified  Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  listings      EquipmentListing[] @relation("OwnerListings")
+  bookings      Booking[]          @relation("RenterBookings")
+  reviewsWritten Review[]          @relation("ReviewAuthor")
+
+  @@map("users")
+}
+
+// ---------------------------------------------------------------------------
+// Equipment catalog
+// ---------------------------------------------------------------------------
+
+model EquipmentCategory {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  icon        String?
+
+  listings EquipmentListing[]
+
+  createdAt DateTime @default(now())
+
+  @@map("equipment_categories")
+}
+
+enum EquipmentCondition {
+  NEW
+  EXCELLENT
+  GOOD
+  FAIR
+}
+
+enum ListingStatus {
+  ACTIVE
+  INACTIVE
+  MAINTENANCE
+}
+
+model EquipmentListing {
+  id          String @id @default(cuid())
+  ownerId     String
+  owner       User   @relation("OwnerListings", fields: [ownerId], references: [id])
+
+  categoryId  String
+  category    EquipmentCategory @relation(fields: [categoryId], references: [id])
+
+  title       String
+  description String
+
+  make        String?
+  model       String?
+  year        Int?
+  condition   EquipmentCondition @default(GOOD)
+
+  dailyRate   Decimal @db.Decimal(10, 2)
+  weeklyRate  Decimal? @db.Decimal(10, 2)
+  monthlyRate Decimal? @db.Decimal(10, 2)
+  depositAmount Decimal? @db.Decimal(10, 2)
+
+  // Location
+  addressLine String?
+  city        String
+  state       String
+  zipCode     String
+  latitude    Float?
+  longitude   Float?
+
+  // Freeform technical specs, e.g. { "weightLbs": 18500, "digDepthFt": 14.5 }
+  specs Json?
+
+  status ListingStatus @default(ACTIVE)
+
+  photos       Photo[]
+  availability AvailabilityBlock[]
+  bookings     Booking[]
+  reviews      Review[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([categoryId])
+  @@index([ownerId])
+  @@index([city, state])
+  @@map("equipment_listings")
+}
+
+model Photo {
+  id        String           @id @default(cuid())
+  listingId String
+  listing   EquipmentListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  url       String
+  altText   String?
+  position  Int              @default(0)
+
+  @@index([listingId])
+  @@map("photos")
+}
+
+// ---------------------------------------------------------------------------
+// Availability calendar
+// ---------------------------------------------------------------------------
+
+enum AvailabilityReason {
+  BOOKED
+  MAINTENANCE
+  OWNER_BLOCKED
+}
+
+// A date range during which a listing is NOT available for new bookings.
+// Confirmed bookings automatically create a BOOKED block covering their dates.
+model AvailabilityBlock {
+  id        String             @id @default(cuid())
+  listingId String
+  listing   EquipmentListing   @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  startDate DateTime
+  endDate   DateTime
+  reason    AvailabilityReason @default(OWNER_BLOCKED)
+  bookingId String?            @unique
+  booking   Booking?           @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([listingId, startDate, endDate])
+  @@map("availability_blocks")
+}
+
+// ---------------------------------------------------------------------------
+// Bookings
+// ---------------------------------------------------------------------------
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+model Booking {
+  id        String  @id @default(cuid())
+  listingId String
+  listing   EquipmentListing @relation(fields: [listingId], references: [id])
+
+  renterId String
+  renter   User   @relation("RenterBookings", fields: [renterId], references: [id])
+
+  startDate DateTime
+  endDate   DateTime
+
+  totalPrice      Decimal @db.Decimal(10, 2)
+  deliveryRequired Boolean @default(false)
+  notes           String?
+
+  status BookingStatus @default(PENDING)
+
+  availabilityBlock AvailabilityBlock?
+  review            Review?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([listingId])
+  @@index([renterId])
+  @@map("bookings")
+}
+
+// ---------------------------------------------------------------------------
+// Reviews
+// ---------------------------------------------------------------------------
+
+model Review {
+  id        String @id @default(cuid())
+  bookingId String @unique
+  booking   Booking @relation(fields: [bookingId], references: [id])
+
+  listingId String
+  listing   EquipmentListing @relation(fields: [listingId], references: [id])
+
+  authorId String
+  author   User   @relation("ReviewAuthor", fields: [authorId], references: [id])
+
+  rating  Int
+  comment String?
+
+  createdAt DateTime @default(now())
+
+  @@index([listingId])
+  @@map("reviews")
+}
