@@ -33,12 +33,18 @@ model User {
   companyName String?
   isVerified  Boolean  @default(false)
 
+  // Trust & safety
+  insuranceVerified Boolean  @default(false)
+  insuranceProvider String?
+  certifications    String[] @default([])
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  listings      EquipmentListing[] @relation("OwnerListings")
-  bookings      Booking[]          @relation("RenterBookings")
-  reviewsWritten Review[]          @relation("ReviewAuthor")
+  listings       EquipmentListing[] @relation("OwnerListings")
+  bookings       Booking[]          @relation("RenterBookings")
+  reviewsWritten Review[]           @relation("ReviewAuthor")
+  damageReports  DamageReport[]     @relation("DamageReporter")
 
   @@map("users")
 }
@@ -90,10 +96,12 @@ model EquipmentListing {
   year        Int?
   condition   EquipmentCondition @default(GOOD)
 
-  dailyRate   Decimal @db.Decimal(10, 2)
-  weeklyRate  Decimal? @db.Decimal(10, 2)
-  monthlyRate Decimal? @db.Decimal(10, 2)
+  dailyRate     Decimal  @db.Decimal(10, 2)
+  weeklyRate    Decimal? @db.Decimal(10, 2)
+  monthlyRate   Decimal? @db.Decimal(10, 2)
   depositAmount Decimal? @db.Decimal(10, 2)
+  deliveryFeeAmount Decimal? @db.Decimal(10, 2)
+  damageWaiverPct   Float?   // e.g. 0.12 = 12% of rental subtotal
 
   // Location
   addressLine String?
@@ -108,10 +116,12 @@ model EquipmentListing {
 
   status ListingStatus @default(ACTIVE)
 
-  photos       Photo[]
-  availability AvailabilityBlock[]
-  bookings     Booking[]
-  reviews      Review[]
+  photos          Photo[]
+  availability    AvailabilityBlock[]
+  bookings        Booking[]
+  reviews         Review[]
+  maintenanceLogs MaintenanceLogEntry[]
+  damageReports   DamageReport[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -184,14 +194,22 @@ model Booking {
   startDate DateTime
   endDate   DateTime
 
-  totalPrice      Decimal @db.Decimal(10, 2)
-  deliveryRequired Boolean @default(false)
-  notes           String?
+  // Price breakdown snapshot at time of booking
+  subtotal         Decimal @db.Decimal(10, 2)
+  deliveryFee      Decimal @default(0) @db.Decimal(10, 2)
+  damageWaiverFee  Decimal @default(0) @db.Decimal(10, 2)
+  totalPrice       Decimal @db.Decimal(10, 2) // subtotal + deliveryFee + damageWaiverFee
+  depositAmount    Decimal? @db.Decimal(10, 2) // refundable, held separately from totalPrice
+
+  deliveryRequired     Boolean @default(false)
+  damageWaiverAccepted Boolean @default(false)
+  notes                String?
 
   status BookingStatus @default(PENDING)
 
   availabilityBlock AvailabilityBlock?
   review            Review?
+  damageReports     DamageReport[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -216,11 +234,71 @@ model Review {
   authorId String
   author   User   @relation("ReviewAuthor", fields: [authorId], references: [id])
 
-  rating  Int
-  comment String?
+  rating    Int
+  comment   String?
+  photoUrls String[] @default([])
 
   createdAt DateTime @default(now())
 
   @@index([listingId])
   @@map("reviews")
+}
+
+// ---------------------------------------------------------------------------
+// Trust & safety
+// ---------------------------------------------------------------------------
+
+enum DamageReportStatus {
+  OPEN
+  IN_REVIEW
+  RESOLVED
+  DISMISSED
+}
+
+model DamageReport {
+  id String @id @default(cuid())
+
+  bookingId String
+  booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  listingId String
+  listing   EquipmentListing @relation(fields: [listingId], references: [id])
+
+  reporterId String
+  reporter   User   @relation("DamageReporter", fields: [reporterId], references: [id])
+
+  description String
+  photoUrls   String[] @default([])
+  status      DamageReportStatus @default(OPEN)
+  resolutionNotes String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([listingId])
+  @@index([bookingId])
+  @@map("damage_reports")
+}
+
+enum MaintenanceType {
+  INSPECTION
+  REPAIR
+  ROUTINE_SERVICE
+}
+
+model MaintenanceLogEntry {
+  id String @id @default(cuid())
+
+  listingId String
+  listing   EquipmentListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  type        MaintenanceType
+  description String
+  performedBy String?
+  performedAt DateTime
+
+  createdAt DateTime @default(now())
+
+  @@index([listingId, performedAt])
+  @@map("maintenance_log_entries")
 }

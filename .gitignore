@@ -5,6 +5,10 @@
 /.next/
 /out/
 
+# serwist (generated at build time by `next build`)
+/public/sw.js
+/public/sw.js.map
+
 # production
 /build
 
@@ -27,3 +31,19 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# desktop-app (separate static build, own node_modules/.next/out)
+/desktop-app/node_modules
+/desktop-app/.next
+/desktop-app/out
+/desktop-app/next-env.d.ts
+/desktop-app/.env
+/desktop-app/.env*.local
+
+# tauri
+/src-tauri/target
+/src-tauri/gen
+
+# built installers (produced by `npm run desktop:build`)
+/dist-installers
+/public/downloads

@@ -1,0 +1,51 @@
+name: Build desktop installers
+
+# Manual trigger, or automatically whenever a "desktop-vX.Y.Z" tag is pushed.
+# Runs on both a Windows and a macOS runner so it produces the .exe/.msi and
+# the .dmg in the same run — the .dmg can only ever be built on macOS, which
+# a local Windows machine can't do.
+on:
+  workflow_dispatch: {}
+  push:
+    tags:
+      - "desktop-v*"
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows-latest
+            name: windows
+          - platform: macos-latest
+            name: mac
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Install root dependencies
+        run: npm install
+
+      - name: Install desktop-app dependencies
+        run: npm install
+        working-directory: desktop-app
+
+      - name: Build desktop app + installers
+        # NEXT_PUBLIC_API_BASE_URL is baked into the static build at build
+        # time — point it at your deployed EquipRent app (see README).
+        env:
+          NEXT_PUBLIC_API_BASE_URL: ${{ vars.NEXT_PUBLIC_API_BASE_URL }}
+        run: node scripts/build-desktop.js
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: equiprent-desktop-${{ matrix.name }}
+          path: dist-installers/${{ matrix.name }}/*
+          if-no-files-found: error

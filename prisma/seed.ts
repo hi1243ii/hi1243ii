@@ -45,9 +45,33 @@ const CATEGORIES = [
 ] as const;
 
 const OWNERS = [
-  { email: "owner.summit@equiprent.dev", name: "Summit Equipment Rentals", companyName: "Summit Equipment Rentals", phone: "555-010-1000" },
-  { email: "owner.ironpeak@equiprent.dev", name: "IronPeak Machinery", companyName: "IronPeak Machinery Co.", phone: "555-010-2000" },
-  { email: "owner.buildright@equiprent.dev", name: "BuildRight Supply", companyName: "BuildRight Supply", phone: "555-010-3000" },
+  {
+    email: "owner.summit@equiprent.dev",
+    name: "Summit Equipment Rentals",
+    companyName: "Summit Equipment Rentals",
+    phone: "555-010-1000",
+    insuranceVerified: true,
+    insuranceProvider: "Travelers Commercial Equipment",
+    certifications: ["OSHA 30", "NCCCO Certified"],
+  },
+  {
+    email: "owner.ironpeak@equiprent.dev",
+    name: "IronPeak Machinery",
+    companyName: "IronPeak Machinery Co.",
+    phone: "555-010-2000",
+    insuranceVerified: true,
+    insuranceProvider: "Liberty Mutual Equipment Coverage",
+    certifications: ["OSHA 30"],
+  },
+  {
+    email: "owner.buildright@equiprent.dev",
+    name: "BuildRight Supply",
+    companyName: "BuildRight Supply",
+    phone: "555-010-3000",
+    insuranceVerified: false,
+    insuranceProvider: null,
+    certifications: [],
+  },
 ];
 
 const RENTERS = [
@@ -55,8 +79,6 @@ const RENTERS = [
   { email: "renter.acole@equiprent.dev", name: "Avery Cole", phone: "555-020-2000" },
   { email: "renter.tpatel@equiprent.dev", name: "Tanvi Patel", phone: "555-020-3000" },
 ];
-
-const PHOTO = (seed: string) => `https://picsum.photos/seed/${seed}/1200/800`;
 
 async function main() {
   console.log("Seeding database...");
@@ -121,6 +143,8 @@ async function main() {
     longitude: number;
     specs: Record<string, string | number | boolean>;
     photoSeed: string;
+    deliveryFeeAmount?: number;
+    damageWaiverPct?: number;
   };
 
   const listingSeeds: ListingSeed[] = [
@@ -143,7 +167,7 @@ async function main() {
       zipCode: "80202",
       latitude: 39.7392,
       longitude: -104.9903,
-      specs: { operatingWeightLbs: 49000, digDepthFt: 22.6, bucketCapacityCuYd: 1.19, horsepower: 158 },
+      specs: { operatingWeightLbs: 49000, digDepthFt: 22.6, bucketCapacityCuYd: 1.19, horsepower: 158, engineHours: 1420 },
       photoSeed: "excavator-cat320",
     },
     {
@@ -164,7 +188,7 @@ async function main() {
       zipCode: "80301",
       latitude: 40.015,
       longitude: -105.2705,
-      specs: { operatingWeightLbs: 12787, digDepthFt: 13.4, bucketCapacityCuYd: 0.17, horsepower: 47.6 },
+      specs: { operatingWeightLbs: 12787, digDepthFt: 13.4, bucketCapacityCuYd: 0.17, horsepower: 47.6, engineHours: 340 },
       photoSeed: "excavator-kubota",
     },
     {
@@ -185,7 +209,7 @@ async function main() {
       zipCode: "80204",
       latitude: 39.7285,
       longitude: -105.0126,
-      specs: { operatingWeightLbs: 8440, ratedOperatingCapacityLbs: 2690, horsepower: 74.3 },
+      specs: { operatingWeightLbs: 8440, ratedOperatingCapacityLbs: 2690, horsepower: 74.3, engineHours: 980 },
       photoSeed: "skidsteer-bobcat",
     },
     {
@@ -206,7 +230,7 @@ async function main() {
       zipCode: "80010",
       latitude: 39.7294,
       longitude: -104.8319,
-      specs: { operatingWeightLbs: 9160, ratedOperatingCapacityLbs: 3050, horsepower: 82 },
+      specs: { operatingWeightLbs: 9160, ratedOperatingCapacityLbs: 3050, horsepower: 82, engineHours: 210 },
       photoSeed: "skidsteer-deere",
     },
     {
@@ -227,7 +251,7 @@ async function main() {
       zipCode: "80302",
       latitude: 40.0176,
       longitude: -105.2797,
-      specs: { kwOutput: 20, fuelType: "Diesel", tankCapacityGal: 60, runtimeHoursAt75Pct: 25 },
+      specs: { kwOutput: 20, fuelType: "Diesel", tankCapacityGal: 60, runtimeHoursAt75Pct: 25, engineHours: 610 },
       photoSeed: "generator-towable",
     },
     {
@@ -248,7 +272,7 @@ async function main() {
       zipCode: "80011",
       latitude: 39.7089,
       longitude: -104.7317,
-      specs: { wattsRated: 5500, wattsPeak: 7000, fuelType: "Gasoline", noiseLevelDb: 58 },
+      specs: { wattsRated: 5500, wattsPeak: 7000, fuelType: "Gasoline", noiseLevelDb: 58, engineHours: 95 },
       photoSeed: "generator-honda",
     },
     {
@@ -311,7 +335,7 @@ async function main() {
       zipCode: "80012",
       latitude: 39.6880,
       longitude: -104.7561,
-      specs: { platformHeightFt: 45, horizontalReachFt: 24.5, liftCapacityLbs: 500, driveType: "4WD" },
+      specs: { platformHeightFt: 45, horizontalReachFt: 24.5, liftCapacityLbs: 500, driveType: "4WD", engineHours: 505 },
       photoSeed: "aeriallift-jlg",
     },
     {
@@ -353,7 +377,7 @@ async function main() {
       zipCode: "80304",
       latitude: 40.0247,
       longitude: -105.2519,
-      specs: { plateWidthIn: 21.7, centrifugalForceLbs: 14742, weightLbs: 794 },
+      specs: { plateWidthIn: 21.7, centrifugalForceLbs: 14742, weightLbs: 794, engineHours: 150 },
       photoSeed: "compactor-plate",
     },
   ];
@@ -380,12 +404,9 @@ async function main() {
         latitude: seed.latitude,
         longitude: seed.longitude,
         specs: seed.specs,
-        photos: {
-          create: [
-            { url: PHOTO(seed.photoSeed + "-1"), altText: seed.title, position: 0 },
-            { url: PHOTO(seed.photoSeed + "-2"), altText: seed.title, position: 1 },
-          ],
-        },
+        deliveryFeeAmount: seed.deliveryFeeAmount ?? Math.round(seed.dailyRate * 0.4),
+        damageWaiverPct: seed.damageWaiverPct ?? 0.1,
+        // No photos yet — owners upload real equipment photos via the listing wizard.
       },
     });
     listings.push(listing);
@@ -400,7 +421,12 @@ async function main() {
       renterId: jordan.id,
       startDate: new Date("2026-06-01"),
       endDate: new Date("2026-06-05"),
-      totalPrice: 2600,
+      subtotal: 2600,
+      deliveryFee: 0,
+      damageWaiverFee: 260,
+      totalPrice: 2860,
+      depositAmount: 1500,
+      damageWaiverAccepted: true,
       status: "COMPLETED",
       notes: "Foundation excavation for residential addition.",
     },
@@ -430,7 +456,11 @@ async function main() {
       renterId: avery.id,
       startDate: new Date("2026-09-15"),
       endDate: new Date("2026-09-20"),
-      totalPrice: 1400,
+      subtotal: 1400,
+      deliveryFee: 128,
+      damageWaiverFee: 0,
+      totalPrice: 1528,
+      depositAmount: 800,
       status: "CONFIRMED",
       deliveryRequired: true,
       notes: "Backyard landscaping project, need delivery to site.",
@@ -446,13 +476,17 @@ async function main() {
     },
   });
 
-  await prisma.booking.create({
+  const pendingBooking = await prisma.booking.create({
     data: {
       listingId: bobcatSkid.id,
       renterId: tanvi.id,
       startDate: new Date("2026-09-22"),
       endDate: new Date("2026-09-25"),
+      subtotal: 825,
+      deliveryFee: 0,
+      damageWaiverFee: 0,
       totalPrice: 825,
+      depositAmount: 600,
       status: "PENDING",
       notes: "Site grading before paving crew arrives.",
     },
@@ -465,6 +499,50 @@ async function main() {
       endDate: new Date("2026-10-10"),
       reason: "MAINTENANCE",
     },
+  });
+
+  await prisma.damageReport.create({
+    data: {
+      bookingId: pendingBooking.id,
+      listingId: bobcatSkid.id,
+      reporterId: tanvi.id,
+      description:
+        "Minor hydraulic fluid leak noticed at the quick-attach coupler after the first day on site.",
+      status: "IN_REVIEW",
+    },
+  });
+
+  await prisma.maintenanceLogEntry.createMany({
+    data: [
+      {
+        listingId: excavator320.id,
+        type: "ROUTINE_SERVICE",
+        description: "500-hour service: hydraulic fluid, filters, and track tension check.",
+        performedBy: "Summit Fleet Services",
+        performedAt: new Date("2026-05-20"),
+      },
+      {
+        listingId: excavator320.id,
+        type: "INSPECTION",
+        description: "Annual safety inspection — passed, no deficiencies noted.",
+        performedBy: "Colorado Heavy Equipment Inspections",
+        performedAt: new Date("2026-08-01"),
+      },
+      {
+        listingId: bobcatSkid.id,
+        type: "REPAIR",
+        description: "Replaced quick-attach coupler seal following reported leak.",
+        performedBy: "Summit Fleet Services",
+        performedAt: new Date("2026-09-26"),
+      },
+      {
+        listingId: kubotaMini.id,
+        type: "INSPECTION",
+        description: "Pre-rental inspection — tracks, hydraulics, and safety switches checked.",
+        performedBy: "IronPeak Service Bay",
+        performedAt: new Date("2026-09-10"),
+      },
+    ],
   });
 
   console.log(

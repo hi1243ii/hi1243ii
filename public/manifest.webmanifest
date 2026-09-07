@@ -1,0 +1,51 @@
+{
+  "name": "EquipRent — Construction Equipment Rental",
+  "short_name": "EquipRent",
+  "description": "Rent excavators, skid steers, generators, scaffolding, and aerial lifts from verified local suppliers.",
+  "start_url": "/?source=pwa",
+  "id": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#22262e",
+  "theme_color": "#f5b700",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": ["business", "shopping", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Browse Equipment",
+      "url": "/listings",
+      "description": "Search and filter available equipment"
+    },
+    {
+      "name": "My Bookings",
+      "url": "/bookings",
+      "description": "View your upcoming and past rentals"
+    }
+  ]
+}

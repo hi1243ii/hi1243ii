@@ -6,6 +6,8 @@ import {
   startOfMonth,
 } from "date-fns";
 
+import { cn } from "@/lib/cn";
+
 export interface AvailabilityBlockSummary {
   id: string;
   startDate: string | Date;
@@ -19,10 +21,10 @@ const REASON_LABEL: Record<AvailabilityBlockSummary["reason"], string> = {
   OWNER_BLOCKED: "Unavailable",
 };
 
-const REASON_COLOR: Record<AvailabilityBlockSummary["reason"], string> = {
-  BOOKED: "bg-red-100 text-red-700",
-  MAINTENANCE: "bg-amber-100 text-amber-700",
-  OWNER_BLOCKED: "bg-gray-200 text-gray-600",
+const REASON_CLASS: Record<AvailabilityBlockSummary["reason"], string> = {
+  BOOKED: "bg-destructive/10 text-destructive",
+  MAINTENANCE: "bg-warning/20 text-warning-foreground",
+  OWNER_BLOCKED: "bg-muted text-muted-foreground",
 };
 
 /** Read-only single-month availability grid for a listing. */
@@ -38,16 +40,16 @@ export function AvailabilityCalendar({
 
   function blockForDay(day: Date) {
     return blocks.find((block) =>
-      isWithinInterval(day, { start: new Date(block.startDate), end: new Date(block.endDate) })
+      isWithinInterval(day, { start: new Date(block.startDate), end: new Date(block.endDate) }),
     );
   }
 
   return (
     <div>
-      <p className="mb-2 text-sm font-medium text-gray-700">{format(month, "MMMM yyyy")}</p>
+      <p className="mb-2 text-sm font-medium text-foreground">{format(month, "MMMM yyyy")}</p>
       <div className="grid grid-cols-7 gap-1 text-center text-xs">
         {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
-          <div key={i} className="py-1 font-semibold text-gray-400">
+          <div key={i} className="py-1 font-semibold text-muted-foreground">
             {d}
           </div>
         ))}
@@ -60,22 +62,25 @@ export function AvailabilityCalendar({
             <div
               key={day.toISOString()}
               title={block ? REASON_LABEL[block.reason] : "Available"}
-              className={`rounded py-1.5 ${block ? REASON_COLOR[block.reason] : "bg-green-50 text-green-700"}`}
+              className={cn(
+                "rounded py-1.5",
+                block ? REASON_CLASS[block.reason] : "bg-success/10 text-success",
+              )}
             >
               {format(day, "d")}
             </div>
           );
         })}
       </div>
-      <div className="mt-3 flex flex-wrap gap-3 text-xs text-gray-500">
+      <div className="mt-3 flex flex-wrap gap-3 text-xs text-muted-foreground">
         <span className="flex items-center gap-1">
-          <span className="h-3 w-3 rounded bg-green-50" /> Available
+          <span className="h-3 w-3 rounded bg-success/10" /> Available
         </span>
         <span className="flex items-center gap-1">
-          <span className="h-3 w-3 rounded bg-red-100" /> Booked
+          <span className="h-3 w-3 rounded bg-destructive/10" /> Booked
         </span>
         <span className="flex items-center gap-1">
-          <span className="h-3 w-3 rounded bg-amber-100" /> Maintenance
+          <span className="h-3 w-3 rounded bg-warning/20" /> Maintenance
         </span>
       </div>
     </div>

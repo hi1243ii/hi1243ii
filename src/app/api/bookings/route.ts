@@ -30,7 +30,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { listingId, renterId, startDate, endDate, deliveryRequired, notes } = parsed.data;
+  const { listingId, renterId, startDate, endDate, deliveryRequired, damageWaiverAccepted, notes } =
+    parsed.data;
 
   const listing = await prisma.equipmentListing.findUnique({
     where: { id: listingId },
@@ -52,7 +53,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const totalPrice = calculateRentalTotal({
+  const subtotal = calculateRentalTotal({
     startDate,
     endDate,
     dailyRate: Number(listing.dailyRate),
@@ -60,14 +61,25 @@ export async function POST(request: NextRequest) {
     monthlyRate: listing.monthlyRate ? Number(listing.monthlyRate) : null,
   });
 
+  const deliveryFee = deliveryRequired ? Number(listing.deliveryFeeAmount ?? 0) : 0;
+  const damageWaiverFee = damageWaiverAccepted
+    ? Math.round(subtotal * (listing.damageWaiverPct ?? 0) * 100) / 100
+    : 0;
+  const totalPrice = subtotal + deliveryFee + damageWaiverFee;
+
   const booking = await prisma.booking.create({
     data: {
       listingId,
       renterId,
       startDate,
       endDate,
+      subtotal,
+      deliveryFee,
+      damageWaiverFee,
       totalPrice,
+      depositAmount: listing.depositAmount,
       deliveryRequired,
+      damageWaiverAccepted,
       notes,
       status: "PENDING",
     },

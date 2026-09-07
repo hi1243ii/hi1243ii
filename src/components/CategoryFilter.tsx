@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { cn } from "@/lib/cn";
+
 export interface CategoryFilterItem {
   id: string;
   name: string;
@@ -17,11 +19,12 @@ export function CategoryFilter({
     <div className="flex flex-wrap gap-2">
       <Link
         href="/listings"
-        className={`rounded-full border px-4 py-1.5 text-sm font-medium ${
+        className={cn(
+          "rounded-full border px-4 py-1.5 text-sm font-medium transition-colors",
           !activeSlug
-            ? "border-brand-600 bg-brand-600 text-white"
-            : "border-gray-300 text-gray-700 hover:border-brand-400"
-        }`}
+            ? "border-primary bg-primary text-primary-foreground"
+            : "border-border text-foreground/70 hover:border-primary/60 hover:text-foreground",
+        )}
       >
         All Categories
       </Link>
@@ -29,11 +32,12 @@ export function CategoryFilter({
         <Link
           key={category.id}
           href={`/listings?category=${category.slug}`}
-          className={`rounded-full border px-4 py-1.5 text-sm font-medium ${
+          className={cn(
+            "rounded-full border px-4 py-1.5 text-sm font-medium transition-colors",
             activeSlug === category.slug
-              ? "border-brand-600 bg-brand-600 text-white"
-              : "border-gray-300 text-gray-700 hover:border-brand-400"
-          }`}
+              ? "border-primary bg-primary text-primary-foreground"
+              : "border-border text-foreground/70 hover:border-primary/60 hover:text-foreground",
+          )}
         >
           {category.name}
         </Link>

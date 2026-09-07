@@ -7,6 +7,7 @@ export const createBookingSchema = z
     startDate: z.coerce.date(),
     endDate: z.coerce.date(),
     deliveryRequired: z.boolean().default(false),
+    damageWaiverAccepted: z.boolean().default(false),
     notes: z.string().max(2000).optional(),
   })
   .refine((data) => data.endDate > data.startDate, {

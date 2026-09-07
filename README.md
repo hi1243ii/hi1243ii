@@ -93,6 +93,60 @@ Seed data includes 6 equipment categories, 3 owners, 3 renters, 11 listings (2 p
 excavators split across two owners), and sample bookings in different statuses with one completed
 booking that has a review.
 
+## Desktop app (Tauri)
+
+`desktop-app/` is a separate, minimal Next.js app built with `output: "export"` — a static
+frontend (Browse, Listing Detail, My Bookings) with no server of its own. It talks to this app's
+`/api/*` routes over the network for all live data, and caches recently viewed listings in
+`localStorage` so they stay browsable offline (booking and live availability always require a
+connection). `src-tauri/` wraps that static build into a native window with Tauri, using the
+`EquipRent` icon in `public/icons/`.
+
+**Prerequisites** (one-time, per machine): [Rust](https://rustup.rs/) and, on Windows, the
+"Desktop development with C++" workload from
+[Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/).
+
+**Point the app at your backend.** The API base URL is baked into the static build at build time:
+
+```bash
+cp desktop-app/.env.example desktop-app/.env
+# edit NEXT_PUBLIC_API_BASE_URL — defaults to http://localhost:3000 for local dev
+```
+
+For a real installer you hand to other people, this needs to be a **hosted** deployment of this
+app (e.g. Vercel + a hosted Postgres like Neon or Supabase) — an installer pointed at
+`localhost:3000` only works on your own machine.
+
+**Run it in dev mode** (hot-reloads the desktop-app frontend inside a Tauri window):
+
+```bash
+npm run desktop:dev
+```
+
+**Build both installers with one command:**
+
+```bash
+npm run desktop:build
+```
+
+This builds the static frontend, compiles the native app, and collects the output into:
+
+```
+dist-installers/windows/   EquipRent_x.y.z_x64-setup.exe, EquipRent_x.y.z_x64_en-US.msi
+dist-installers/mac/       EquipRent_x.y.z_x64.dmg
+```
+
+...and copies the same files into `public/downloads/`, which the `/download` page on the website
+serves directly ("Download for Windows" / "Download for Mac").
+
+**Important:** a machine can only build installers for its own OS — Apple's toolchain (needed to
+produce a signed-enough `.dmg`) only runs on macOS, same as the Windows `.exe`/`.msi` can only be
+built on Windows. Running `npm run desktop:build` on Windows gives you the Windows installer only;
+you (or CI) need to run it again on a Mac for the `.dmg`. `.github/workflows/build-desktop.yml`
+does exactly that — it builds on both a Windows and a macOS runner in one workflow run
+(triggered manually, or by pushing a `desktop-v*` tag) and uploads both installers as artifacts.
+Set the `NEXT_PUBLIC_API_BASE_URL` repository variable there to your hosted deployment's URL.
+
 ## Notes / next steps
 
 - Authentication is not wired up yet — the dashboard and bookings pages currently show the first
