@@ -39,12 +39,21 @@ async function getReleaseAssets(): Promise<GithubReleaseAsset[]> {
   try {
     const res = await fetch(
       `https://api.github.com/repos/${GITHUB_REPO}/releases/tags/${RELEASE_TAG}`,
-      { headers: { Accept: "application/vnd.github+json" }, next: { revalidate: 300 } },
+      {
+        // GitHub's API rejects requests with no User-Agent (403), and Node's
+        // fetch doesn't send one by default the way curl/browsers do.
+        headers: { Accept: "application/vnd.github+json", "User-Agent": "equiprent-download-page" },
+        next: { revalidate: 300 },
+      },
     );
-    if (!res.ok) return [];
+    if (!res.ok) {
+      console.error(`GitHub release lookup failed: ${res.status} ${await res.text()}`);
+      return [];
+    }
     const data = await res.json();
     return Array.isArray(data.assets) ? data.assets : [];
-  } catch {
+  } catch (err) {
+    console.error("GitHub release lookup threw:", err);
     return [];
   }
 }
