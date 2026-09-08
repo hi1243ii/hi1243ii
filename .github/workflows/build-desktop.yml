@@ -3,7 +3,10 @@ name: Build desktop installers
 # Manual trigger, or automatically whenever a "desktop-vX.Y.Z" tag is pushed.
 # Runs on both a Windows and a macOS runner so it produces the .exe/.msi and
 # the .dmg in the same run — the .dmg can only ever be built on macOS, which
-# a local Windows machine can't do.
+# a local Windows machine can't do. Both installers are then published as
+# assets on a rolling "desktop-latest" GitHub Release, which is what the
+# website's /download page links to (public/downloads/ is a local-only,
+# gitignored build artifact — it never reaches the deployed site on its own).
 on:
   workflow_dispatch: {}
   push:
@@ -49,3 +52,24 @@ jobs:
           name: equiprent-desktop-${{ matrix.name }}
           path: dist-installers/${{ matrix.name }}/*
           if-no-files-found: error
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: equiprent-desktop-*
+          path: dist-installers
+          merge-multiple: false
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: desktop-latest
+          name: "EquipRent Desktop (latest)"
+          body: "Automatically built from ${{ github.sha }}. Windows and Mac installers below."
+          make_latest: false
+          files: dist-installers/**/*

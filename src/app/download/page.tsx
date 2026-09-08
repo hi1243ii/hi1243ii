@@ -8,14 +8,48 @@ import { Card, CardContent } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
+const GITHUB_REPO = "hi1243ii/hi1243ii";
+const RELEASE_TAG = "desktop-latest";
 const DOWNLOADS_DIR = path.join(process.cwd(), "public", "downloads");
+
+interface InstallerLink {
+  fileName: string;
+  size: string;
+  url: string;
+}
 
 function formatBytes(bytes: number) {
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function findInstaller(matchExt: (ext: string) => boolean) {
+interface GithubReleaseAsset {
+  name: string;
+  size: number;
+  browser_download_url: string;
+}
+
+// Installers are built by .github/workflows/build-desktop.yml and published
+// as assets on a rolling "desktop-latest" GitHub Release — that's a stable
+// public URL the deployed site can actually link to. (public/downloads/ is a
+// local-only, gitignored build artifact; it never reaches the deployed site
+// on its own, so it's kept only as a fallback for testing straight after
+// `npm run desktop:build` on your own machine.)
+async function getReleaseAssets(): Promise<GithubReleaseAsset[]> {
+  try {
+    const res = await fetch(
+      `https://api.github.com/repos/${GITHUB_REPO}/releases/tags/${RELEASE_TAG}`,
+      { headers: { Accept: "application/vnd.github+json" }, next: { revalidate: 300 } },
+    );
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data.assets) ? data.assets : [];
+  } catch {
+    return [];
+  }
+}
+
+function findLocalInstaller(matchExt: (ext: string) => boolean): InstallerLink | null {
   let files: string[] = [];
   try {
     files = fs.readdirSync(DOWNLOADS_DIR);
@@ -25,14 +59,31 @@ function findInstaller(matchExt: (ext: string) => boolean) {
   const match = files.find((f) => matchExt(path.extname(f).toLowerCase()));
   if (!match) return null;
   const stat = fs.statSync(path.join(DOWNLOADS_DIR, match));
-  return { fileName: match, size: formatBytes(stat.size) };
+  return { fileName: match, size: formatBytes(stat.size), url: `/downloads/${match}` };
 }
 
-export default function DownloadPage() {
+function findReleaseInstaller(
+  assets: GithubReleaseAsset[],
+  matchExt: (ext: string) => boolean,
+): InstallerLink | null {
+  const match = assets.find((a) => matchExt(path.extname(a.name).toLowerCase()));
+  if (!match) return null;
+  return { fileName: match.name, size: formatBytes(match.size), url: match.browser_download_url };
+}
+
+export default async function DownloadPage() {
+  const assets = await getReleaseAssets();
+
   // Prefer the NSIS .exe for Windows (simpler install flow for most users);
-  // fall back to .msi if that's the only one present.
-  const windows = findInstaller((ext) => ext === ".exe") ?? findInstaller((ext) => ext === ".msi");
-  const mac = findInstaller((ext) => ext === ".dmg");
+  // fall back to .msi if that's the only one present. Release assets first,
+  // then a local build for same-machine testing.
+  const windows =
+    findReleaseInstaller(assets, (ext) => ext === ".exe") ??
+    findReleaseInstaller(assets, (ext) => ext === ".msi") ??
+    findLocalInstaller((ext) => ext === ".exe") ??
+    findLocalInstaller((ext) => ext === ".msi");
+  const mac =
+    findReleaseInstaller(assets, (ext) => ext === ".dmg") ?? findLocalInstaller((ext) => ext === ".dmg");
 
   return (
     <div>
@@ -67,7 +118,7 @@ export default function DownloadPage() {
               {windows ? (
                 <>
                   <Button asChild size="lg" className="w-full">
-                    <a href={`/downloads/${windows.fileName}`} download>
+                    <a href={windows.url} download>
                       <Download className="h-4 w-4" />
                       Download for Windows
                     </a>
@@ -96,7 +147,7 @@ export default function DownloadPage() {
               {mac ? (
                 <>
                   <Button asChild size="lg" className="w-full">
-                    <a href={`/downloads/${mac.fileName}`} download>
+                    <a href={mac.url} download>
                       <Download className="h-4 w-4" />
                       Download for Mac
                     </a>
